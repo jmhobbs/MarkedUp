@@ -28,35 +28,49 @@ base_html_pre = """<html>
 
 base_html_post = "</body></html>"
 
+################################################################################
+
 markdown = markdown2.Markdown()
 
-app = QApplication( sys.argv )
+################################################################################
 
-window = QWidget()
-layout = QVBoxLayout()
+class MarkedUp ( QApplication ):
 
-window.setLayout( layout )
-window.setWindowTitle( "Markdownr" )
-window.resize( 800, 600 )
-window.setMinimumWidth( 500 )
+	def __init__ ( self, argv ):
+		QApplication.__init__( self, argv )
 
-text = QTextEdit()
-text.setAcceptRichText( False )
-text.setText( welcome_text )
-text.setMinimumHeight( 200 )
-layout.addWidget( text )
+		self.window = QWidget()
+		self.window.setWindowTitle( "MarkedUp" )
+		self.window.resize( 800, 600 )
+		self.window.setMinimumWidth( 500 )
 
-web = QWebView()
-web.setMinimumHeight( 200 )
-layout.addWidget( web )
+		self.layout = QVBoxLayout()
+		self.window.setLayout( self.layout )
 
-def updateHTML ():
-	web.setHtml( '%s%s%s' % ( base_html_pre, markdown.convert( text.toPlainText() ), base_html_post ) );
+		self.textArea = QTextEdit()
+		self.textArea.setAcceptRichText( False )
+		self.textArea.setText( welcome_text )
+		self.textArea.setMinimumHeight( 200 )
+		self.layout.addWidget( self.textArea )
 
-QObject.connect( text, SIGNAL('textChanged()'), updateHTML )
+		self.webview = QWebView()
+		self.webview.setMinimumHeight( 200 )
+		self.layout.addWidget( self.webview )
 
-updateHTML()
+		QObject.connect( self.textArea, SIGNAL('textChanged()'), self.update_view )
 
-window.show()
+		self.update_view()
+		self.window.show()
 
-sys.exit( app.exec_() )
+	def update_view ( self ):
+		self.webview.setHtml(
+			'%s%s%s' % (
+				base_html_pre,
+				markdown.convert( self.textArea.toPlainText() ),
+				base_html_post
+			)
+		);
+
+if __name__ == "__main__":
+	app = MarkedUp( sys.argv )
+	sys.exit( app.exec_() )
