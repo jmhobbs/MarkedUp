@@ -23,6 +23,12 @@ class Parser ( object ):
 		except ImportError, e:
 			pass
 
+		try:
+			from creole import creole2html
+			self.parsers['creole'] = creole2html
+		except ImportError, e:
+			pass
+
 	def get_available_parsers ( self ):
 		return self.parsers.keys()
 
@@ -38,3 +44,5 @@ if __name__ == "__main__":
 	print x.parse( "*Bold*", "textile" ).strip()
 	print "BBCODE"
 	print x.parse( "[b]Bold[/b]", "bbcode" ).strip()
+	print "CREOLE"
+	print x.parse( u'**Bold**', "creole" ).strip()

@@ -17,4 +17,5 @@ MarkedUp speaks several dialects of markup (or, it will eventually at least).
 	* via [PyTextile](http://github.com/jsamsa/python-textile)
 * [BBCode](http://www.phpbb.com/community/faq.php?mode=bbcode)
   * via [postmarkup](http://code.google.com/p/postmarkup/)
-
+* [Creole](http://www.wikicreole.org/)
+  * via [python-creole](http://code.google.com/p/python-creole/)
