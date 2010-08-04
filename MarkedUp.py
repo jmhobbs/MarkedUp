@@ -6,9 +6,7 @@ import os
 
 import markdown2
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtWebKit import *
+from PyQt4 import QtCore, QtGui, QtWebKit
 
 style_path = "%s/style.css" % os.path.dirname( os.path.abspath( __file__ ) )
 
@@ -34,35 +32,47 @@ markdown = markdown2.Markdown()
 
 ################################################################################
 
-class MarkedUp ( QApplication ):
+class MarkedUp ( QtGui.QMainWindow ):
+	def __init__(self):
+		QtGui.QMainWindow.__init__(self)
 
-	def __init__ ( self, argv ):
-		QApplication.__init__( self, argv )
+		self.setWindowTitle( "MarkedUp" )
+		self.resize( 800, 600 )
+		self.setMinimumWidth( 500 )
 
-		self.window = QWidget()
-		self.window.setWindowTitle( "MarkedUp" )
-		self.window.resize( 800, 600 )
-		self.window.setMinimumWidth( 500 )
+		self.layout = QtGui.QVBoxLayout()
 
-		self.layout = QVBoxLayout()
-		self.window.setLayout( self.layout )
+		self.wrapper = QtGui.QWidget()
+		self.wrapper.setLayout( self.layout )
+		self.setCentralWidget( self.wrapper )
 
-		self.textArea = QTextEdit()
+		self.textArea = QtGui.QTextEdit()
 		self.textArea.setAcceptRichText( False )
 		self.textArea.setText( welcome_text )
 		self.textArea.setMinimumHeight( 200 )
 		self.layout.addWidget( self.textArea )
 
-		self.webview = QWebView()
+		self.webview = QtWebKit.QWebView()
 		self.webview.setMinimumHeight( 200 )
 		self.layout.addWidget( self.webview )
 
-		QObject.connect( self.textArea, SIGNAL('textChanged()'), self.update_view )
+		QtCore.QObject.connect( self.textArea, QtCore.SIGNAL( 'textChanged()' ), self.update_view )
 
+		self.build_menu()
 		self.update_view()
-		self.window.show()
+
+	def build_menu ( self ):
+		action = QtGui.QAction( QtGui.QIcon( 'icons/exit.png' ), 'Quit', self )
+		action.setShortcut( 'Ctrl+Q' )
+		action.setStatusTip( 'Quit application' )
+		self.connect( action, QtCore.SIGNAL( 'triggered()' ), QtCore.SLOT( 'close()' ) )
+
+		menubar = self.menuBar()
+		file_menu = menubar.addMenu( '&File' )
+		file_menu.addAction( action )
 
 	def update_view ( self ):
+		self.statusBar().showMessage( 'Rendering...' )
 		self.webview.setHtml(
 			'%s%s%s' % (
 				base_html_pre,
@@ -70,7 +80,10 @@ class MarkedUp ( QApplication ):
 				base_html_post
 			)
 		);
+		self.statusBar().showMessage( '' )
 
 if __name__ == "__main__":
-	app = MarkedUp( sys.argv )
+	app = QtGui.QApplication(sys.argv)
+	markedup = MarkedUp()
+	markedup.show()
 	sys.exit( app.exec_() )
