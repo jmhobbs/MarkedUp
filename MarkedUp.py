@@ -4,33 +4,12 @@
 import sys
 import os
 
-import markdown2
-
 from PyQt4 import QtCore, QtGui, QtWebKit
 
-style_path = "%s/style.css" % os.path.dirname( os.path.abspath( __file__ ) )
+from markedup.parsing import Parser
 
-welcome_text = """# Welcome To Markdownr
-
-This is a markdown composition tool written for Qt4.
-
-I hope it is useful to you!
-"""
-
-base_html_pre = """<html>
-<head>
-	<link rel="stylesheet" type="text/css" href="file://%s" />
-</head>
-<body>
-""" % style_path
-
-base_html_post = "</body></html>"
-
-################################################################################
-
-markdown = markdown2.Markdown()
-
-################################################################################
+base_html_pre = '<html><head><link rel="stylesheet" type="text/css" href="style.css" /></head><body>'
+base_html_post = '</body></html>'
 
 class MarkedUp ( QtGui.QMainWindow ):
 	def __init__(self):
@@ -48,7 +27,6 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 		self.textArea = QtGui.QTextEdit()
 		self.textArea.setAcceptRichText( False )
-		self.textArea.setText( welcome_text )
 		self.textArea.setMinimumHeight( 200 )
 		self.layout.addWidget( self.textArea )
 
@@ -56,10 +34,17 @@ class MarkedUp ( QtGui.QMainWindow ):
 		self.webview.setMinimumHeight( 200 )
 		self.layout.addWidget( self.webview )
 
-		QtCore.QObject.connect( self.textArea, QtCore.SIGNAL( 'textChanged()' ), self.update_view )
+		self.base_url = QtCore.QUrl( "file://%s/" % os.path.dirname( os.path.abspath( __file__ ) ) )
 
+		self.parser = Parser()
 		self.build_menu()
-		self.update_view()
+
+		self.file = None
+		self.saved = True
+		self.file_format = None
+		self.open_file( "%s/welcome.md" % os.path.dirname( os.path.abspath( __file__ ) ) )
+
+		QtCore.QObject.connect( self.textArea, QtCore.SIGNAL( 'textChanged()' ), self.update_view )
 
 	def build_menu ( self ):
 		action = QtGui.QAction( QtGui.QIcon( 'icons/exit.png' ), 'Quit', self )
@@ -71,16 +56,39 @@ class MarkedUp ( QtGui.QMainWindow ):
 		file_menu = menubar.addMenu( '&File' )
 		file_menu.addAction( action )
 
-	def update_view ( self ):
+	def update_view ( self, is_signal=True ):
 		self.statusBar().showMessage( 'Rendering...' )
+
+		if is_signal and self.saved:
+			self.saved = False
+			self.setWindowTitle( "MarkedUp - %s (Modified)" % os.path.basename( self.file ) )
+
 		self.webview.setHtml(
 			'%s%s%s' % (
 				base_html_pre,
-				markdown.convert( self.textArea.toPlainText() ),
+				self.parser.parse( self.textArea.toPlainText(), self.file_format ),
 				base_html_post
-			)
+			),
+			self.base_url
 		);
 		self.statusBar().showMessage( '' )
+
+	def open_file ( self, path ):
+		self.statusBar().showMessage( 'Loading %s' % path )
+		if ".md" == path[-3:] or ".markdown" == path[-9:]:
+			self.file_format = 'markdown'
+		else:
+			self.statusBar().showMessage( 'Unknown File Format: %s' % path )
+			return False
+
+		self.saved = True
+		self.file = path
+		with open( self.file, 'r' ) as handle:
+			self.textArea.setText( handle.read() )
+
+		self.update_view( False )
+		self.statusBar().showMessage( 'Loaded %s' % path )
+		self.setWindowTitle( "MarkedUp - %s " % os.path.basename( path ) )
 
 if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
