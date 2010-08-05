@@ -74,7 +74,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 		# On opening up the system, let's display a welcome message
 		# TODO:  If they pass in a CLI file, we should open that instead.
-		self.open_file( "%s/resource/welcome.mds" % os.path.dirname( os.path.abspath( __file__ ) ) )
+		self.open_file( "%s/resource/welcome.md" % os.path.dirname( os.path.abspath( __file__ ) ) )
 
 		# Any time the text changes, we need to re-parse and update our view
 		QtCore.QObject.connect( self.editArea, QtCore.SIGNAL( 'textChanged()' ), self.update_view )
