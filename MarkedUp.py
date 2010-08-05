@@ -8,6 +8,7 @@ from PyQt4 import QtCore, QtGui, QtWebKit
 
 from markedup.parsing import Parser
 from markedup.curry import Curry
+from markedup.file import MarkedUpFile
 
 BASE_HTML_PRE = '<html><head><link rel="stylesheet" type="text/css" href="style.css" /></head><body>'
 BASE_HTML_POST = '</body></html>'
@@ -82,7 +83,34 @@ class MarkedUp ( QtGui.QMainWindow ):
 		menubar = self.menuBar()
 		file_menu = menubar.addMenu( '&File' )
 
-		action = QtGui.QAction( 'Quit', self )
+		action = QtGui.QAction( '&New', self )
+		action.setShortcut( 'Ctrl+N' )
+		action.setStatusTip( 'New File' )
+		self.connect( action, QtCore.SIGNAL( 'triggered()' ), self.new_file )
+		file_menu.addAction( action )
+
+		action = QtGui.QAction( '&Open', self )
+		action.setShortcut( 'Ctrl+O' )
+		action.setStatusTip( 'Open File' )
+		self.connect( action, QtCore.SIGNAL( 'triggered()' ), self.open_file_dialog )
+		file_menu.addAction( action )
+
+		file_menu.addSeparator()
+
+		action = QtGui.QAction( '&Save', self )
+		action.setShortcut( 'Ctrl+S' )
+		action.setStatusTip( 'Save File' )
+		self.connect( action, QtCore.SIGNAL( 'triggered()' ), self.save_file )
+		file_menu.addAction( action )
+
+		action = QtGui.QAction( 'Save &As...', self )
+		action.setStatusTip( 'Save File As...' )
+		self.connect( action, QtCore.SIGNAL( 'triggered()' ), self.save_file_as_dialog )
+		file_menu.addAction( action )
+
+		file_menu.addSeparator()
+
+		action = QtGui.QAction( '&Quit', self )
 		action.setShortcut( 'Ctrl+Q' )
 		action.setStatusTip( 'Quit MarkedUp' )
 		self.connect( action, QtCore.SIGNAL( 'triggered()' ), QtCore.SLOT( 'close()' ) )
@@ -94,6 +122,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 		for lwm in self.parser.get_available_parsers():
 			self.markup_menu_items[lwm] = QtGui.QAction( self.parser.full_name( lwm ), self )
 			self.markup_menu_items[lwm].setCheckable( True )
+			self.markup_menu_items[lwm].setStatusTip( 'Use %s' % self.parser.full_name( lwm ) )
 			self.connect( self.markup_menu_items[lwm], QtCore.SIGNAL( 'triggered()' ), Curry( self.set_markup_language, lwm ) )
 			markup_menu.addAction( self.markup_menu_items[lwm] )
 
@@ -106,11 +135,10 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 	def update_view ( self, is_signal=True ):
 		"""Parses the content in the edit area and sticks it into the WebKit view."""
-		self.statusBar().showMessage( 'Rendering...' )
 
 		if is_signal and self.saved:
 			self.saved = False
-			self.setWindowTitle( "MarkedUp - %s (unsaved)" % os.path.basename( self.file ) )
+			self.setWindowTitle( "MarkedUp - %s (unsaved)" % os.path.basename( self.file.path ) )
 
 		self.webView.setHtml(
 			'%s%s%s' % (
@@ -123,34 +151,64 @@ class MarkedUp ( QtGui.QMainWindow ):
 			),
 			self.base_url
 		);
-		self.statusBar().showMessage( '' )
 
 	def update_source ( self, index ):
 		"""Updates the source view, if needed."""
 		if index == 1:
 			self.sourceArea.setPlainText( self.parser.parse( unicode( self.editArea.toPlainText() ), self.currentMarkupLanguage ) )
 
+
+	def new_file ( self ):
+		# TODO: Detect unsaved edits
+		self.file = None
+		self.saved = False
+		self.editArea.setPlainText( '' )
+		self.setWindowTitle( "MarkedUp - [New File] (unsaved)" )
+		self.update_view()
+
+	def open_file_dialog ( self ):
+		# TODO: Implement
+		pass
+
+	def save_file ( self ):
+		if not self.file:
+			self.save_file_as_dialog()
+			return
+
+		try:
+			self.file.put_contents( self.editArea.toPlainText() )
+			self.saved = True
+			self.setWindowTitle( "MarkedUp - %s" % os.path.basename( self.file.path ) )
+		except IOError, e:
+			self.statusBar().showMessage( str( e ) )
+			self.file = None
+
+	def save_file_as_dialog ( self ):
+		# TODO: Implement
+		pass
+
 	def open_file ( self, path ):
 		"""Opens a file, detects language (if possible) and loads it into the editor."""
 		self.statusBar().showMessage( 'Loading %s' % path )
 
+		file = MarkedUpFile( path )
 		try:
-			with open( path, 'r' ) as handle:
-				self.editArea.setText( handle.read() )
+			self.editArea.setText( file.get_contents() )
 		except IOError, e:
 			self.statusBar().showMessage( str( e ) )
+			self.file = None
 			return
 
+		self.file = file
 		self.saved = True
-		self.file = path
 
-		self.statusBar().showMessage( 'Loaded %s' % path )
 		self.setWindowTitle( "MarkedUp - %s " % os.path.basename( path ) )
 
-		if ".md" == path[-3:] or ".markdown" == path[-9:]:
-			self.set_markup_language( 'markdown' )
+		if self.file.language in self.parser.get_available_parsers():
+			self.set_markup_language( self.file.language )
+			self.statusBar().showMessage( 'Loaded %s' % path )
 		else:
-			self.statusBar().showMessage( 'Could not guess file format.' )
+			self.statusBar().showMessage( 'Undetermined file format.' )
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ class MarkedUpFile ( object ):
 
 	def __init__ ( self, path=None ):
 
-		self.format = None
+		self.language = None
 		self.path = None
 
 		if path:
@@ -15,13 +15,13 @@ class MarkedUpFile ( object ):
 	def set_path ( self, path ):
 		self.path = os.path.abspath( path )
 		if '.md' == self.path[-3:] or '.markdown' == self.path[-9:]:
-			self.format = 'markdown'
+			self.language = 'markdown'
 		elif '.bbcode' == self.path[-7:]:
-			self.format = 'bbcode'
+			self.language = 'bbcode'
 		elif '.textile' == self.path[-8:]:
-			self.format = 'textile'
+			self.language = 'textile'
 		else:
-			raise Exception( 'Invalid Markup Format' )
+			self.language = None
 
 	def get_contents ( self ):
 		with open( self.path, 'r' ) as handle:
