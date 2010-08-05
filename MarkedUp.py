@@ -34,11 +34,9 @@ class MarkedUp ( QtGui.QMainWindow ):
 		self.tabs = QtGui.QTabWidget()
 		self.setCentralWidget( self.tabs )
 
-		# The editor has live preview, so we split this with a VBoxLayout
-		self.layout = QtGui.QVBoxLayout()
-		self.wrapper = QtGui.QWidget()
-		self.wrapper.setLayout( self.layout )
-		self.tabs.addTab( self.wrapper, "Edit" )
+		# The editor has live preview, so we split this up
+		self.splitter = QtGui.QSplitter( QtCore.Qt.Vertical )
+		self.tabs.addTab( self.splitter, "Edit" )
 
 		# Source viewer is a standalone tab
 		self.sourceArea = QtGui.QTextEdit()
@@ -53,12 +51,12 @@ class MarkedUp ( QtGui.QMainWindow ):
 		self.editArea = QtGui.QTextEdit()
 		self.editArea.setAcceptRichText( False )
 		self.editArea.setMinimumHeight( 200 )
-		self.layout.addWidget( self.editArea )
+		self.splitter.addWidget( self.editArea )
 
 		# We render real-time into the WebKit engine
 		self.webView = QtWebKit.QWebView()
 		self.webView.setMinimumHeight( 200 )
-		self.layout.addWidget( self.webView )
+		self.splitter.addWidget( self.webView )
 
 		# To allow for custom styles/images, we get a base URL located in the same directory as the script
 		self.base_url = QtCore.QUrl( "file://%s/resource/" % os.path.dirname( os.path.abspath( __file__ ) ) )
