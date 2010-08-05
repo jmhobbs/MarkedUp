@@ -1,6 +1,6 @@
 # Welcome To MarkedUp
 
-This is a markdown composition tool written for Qt4.
+This is a lightweight markup language editor written for Qt4.
 
 I hope it is useful to you!
 

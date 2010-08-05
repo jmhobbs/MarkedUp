@@ -22,12 +22,12 @@ class MarkedUp ( QtGui.QMainWindow ):
 		# This tracks wether modifications have been made since the last save.
 		# TODO: It would be cooler to do something with a hash or something, so that
 		#       if you edit it back to the original state it would no longer be "unsaved"
-		self.saved = False
+		self.saved = True
 		# This tracks the current editing language
 		self.currentMarkupLanguage = None
 
 		# Prep the window
-		self.setWindowTitle( "MarkedUp - [New File] (unsaved)" )
+		self.setWindowTitle( "MarkedUp - [New File]" )
 		self.resize( 800, 600 )
 		self.setMinimumWidth( 500 )
 
@@ -64,6 +64,15 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 		# This Parser object will handle all the markup enumeration and parsing
 		self.parser = Parser()
+
+		# Make sure we have something to parse with
+		if len( self.parser.get_available_parsers() ) == 0:
+			QtGui.QMessageBox.critical(
+				self,
+				"No Parsers Available",
+				"MarkedUp could not find any parsers on your system.\n\nVisit http://github.com/jmhobbs/MarkedUp for help.\n\nShutting down."
+			);
+			self.close() # TODO: This seems to not work...
 
 		# Build the toolbar
 		self.build_toolbar()
@@ -110,6 +119,13 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 		file_menu.addSeparator()
 
+		action = QtGui.QAction( 'Save &HTML As...', self )
+		action.setStatusTip( 'Save HTML As...' )
+		self.connect( action, QtCore.SIGNAL( 'triggered()' ), self.save_html_as_dialog )
+		file_menu.addAction( action )
+
+		file_menu.addSeparator()
+
 		action = QtGui.QAction( '&Quit', self )
 		action.setShortcut( 'Ctrl+Q' )
 		action.setStatusTip( 'Quit MarkedUp' )
@@ -126,19 +142,23 @@ class MarkedUp ( QtGui.QMainWindow ):
 			self.connect( self.markup_menu_items[lwm], QtCore.SIGNAL( 'triggered()' ), Curry( self.set_markup_language, lwm ) )
 			markup_menu.addAction( self.markup_menu_items[lwm] )
 
-	def set_markup_language ( self, lwm ):
-		"""Set the current editor language."""
-		self.currentMarkupLanguage = lwm
-		for key, item in self.markup_menu_items.items():
-			item.setChecked( key == lwm )
-		self.update_view( False )
+	def closeEvent( self, event ):
+		"""On quit we want to check if the current file has been saved."""
+		if not self.saved:
+			if not self.confirm_unsaved_dialog():
+				event.ignore()
+				return
+		event.accept()
 
 	def update_view ( self, is_signal=True ):
 		"""Parses the content in the edit area and sticks it into the WebKit view."""
 
 		if is_signal and self.saved:
 			self.saved = False
-			self.setWindowTitle( "MarkedUp - %s (unsaved)" % os.path.basename( self.file.path ) )
+			if self.file:
+				self.setWindowTitle( "MarkedUp - %s (unsaved)" % os.path.basename( self.file.path ) )
+			else:
+				self.setWindowTitle( "MarkedUp - [New File] (unsaved)" )
 
 		self.webView.setHtml(
 			'%s%s%s' % (
@@ -157,35 +177,96 @@ class MarkedUp ( QtGui.QMainWindow ):
 		if index == 1:
 			self.sourceArea.setPlainText( self.parser.parse( unicode( self.editArea.toPlainText() ), self.currentMarkupLanguage ) )
 
+	def open_file_dialog ( self ):
+		"""Show a open file dialog."""
+		if self.saved == False:
+			if not self.confirm_unsaved_dialog():
+				return
+
+		fileName = QtGui.QFileDialog.getOpenFileName( self, "Open File" )
+		if fileName:
+			self.open_file( str( fileName ) )
+
+	def save_file_as_dialog ( self ):
+		"""Show a save-as dialog."""
+		fileName = QtGui.QFileDialog.getSaveFileName( self, "Save File" );
+		if fileName:
+			# TODO: Overwrite warning.
+			self.file.path = str( fileName )
+			self.save_file()
+
+	def save_html_as_dialog ( self ):
+		"""Show a dialog for saving the HTML output of the markup."""
+		fileName = QtGui.QFileDialog.getSaveFileName( self, "Save HTML File", "%s.html" % os.path.basename( self.file.path ), "HTML Files (*.html *.htm)" );
+		if fileName:
+			# TODO: Overwrite warning
+			self.update_source( 1 )
+			try:
+				with open( str( fileName ), 'w' ) as handle:
+					handle.write( str( self.sourceArea.toPlainText() ) )
+				self.statusBar().showMessage( "Saved HTML File: %s" % fileName )
+			except IOError, e:
+				self.statusBar().showMessage( str( e ) )
+
+	def confirm_unsaved_dialog ( self ):
+		"""Confirm that the user wants to abandon changes made on the current document."""
+		response = QtGui.QMessageBox.warning(
+			self,
+			"Save Changes?",
+			"Your current file has unsaved changes.\n\nDo you want to save it?",
+			QtGui.QMessageBox.Save,
+			QtGui.QMessageBox.Discard,
+			QtGui.QMessageBox.Cancel
+		)
+
+		if QtGui.QMessageBox.Save == response:
+			return self.save_file()
+		elif QtGui.QMessageBox.Discard == response:
+			return True
+		else:
+			return False
 
 	def new_file ( self ):
-		# TODO: Detect unsaved edits
-		self.file = None
-		self.saved = False
-		self.editArea.setPlainText( '' )
-		self.setWindowTitle( "MarkedUp - [New File] (unsaved)" )
-		self.update_view()
+		"""Create a new file."""
+		if self.saved == False:
+			if not self.confirm_unsaved_dialog():
+				return
 
-	def open_file_dialog ( self ):
-		# TODO: Implement
-		pass
+		# TODO: Language selection dialog?
+
+		self.editArea.setPlainText( '' )
+		self.setWindowTitle( "MarkedUp - [New File]" )
+		self.file = None
+		self.saved = True
+		self.update_view( False )
+
+	##[ Non-GUI ]#################################################################
+
+	def set_markup_language ( self, lwm ):
+		"""Set the current editor language."""
+		self.currentMarkupLanguage = lwm
+		for key, item in self.markup_menu_items.items():
+			item.setChecked( key == lwm )
+		self.update_view( False )
 
 	def save_file ( self ):
+		"""Actually save a file to disk."""
 		if not self.file:
 			self.save_file_as_dialog()
-			return
+			return False
 
 		try:
 			self.file.put_contents( self.editArea.toPlainText() )
 			self.saved = True
 			self.setWindowTitle( "MarkedUp - %s" % os.path.basename( self.file.path ) )
+			self.statusBar().showMessage( "Saved: %s" % self.file.path )
 		except IOError, e:
+			# TODO: Error dialog?
 			self.statusBar().showMessage( str( e ) )
 			self.file = None
+			return False
 
-	def save_file_as_dialog ( self ):
-		# TODO: Implement
-		pass
+		return True
 
 	def open_file ( self, path ):
 		"""Opens a file, detects language (if possible) and loads it into the editor."""
@@ -195,6 +276,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 		try:
 			self.editArea.setText( file.get_contents() )
 		except IOError, e:
+			# TODO: Error dialog?
 			self.statusBar().showMessage( str( e ) )
 			self.file = None
 			return
@@ -208,11 +290,11 @@ class MarkedUp ( QtGui.QMainWindow ):
 			self.set_markup_language( self.file.language )
 			self.statusBar().showMessage( 'Loaded %s' % path )
 		else:
-			self.statusBar().showMessage( 'Undetermined file format.' )
+			self.statusBar().showMessage( 'Loaded undetermined file language: %s' % path )
 
 
 if __name__ == "__main__":
-	app = QtGui.QApplication(sys.argv)
+	app = QtGui.QApplication( sys.argv )
 	markedup = MarkedUp()
 	markedup.show()
 	sys.exit( app.exec_() )

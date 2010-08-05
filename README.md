@@ -21,4 +21,4 @@ MarkedUp speaks several dialects of markup.  It will detect which ones your syst
 
 ## Coming Soon
 
-* None! Suggest one and I'll build it in!
+* None - Suggest one and I'll build it in!
