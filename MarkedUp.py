@@ -7,6 +7,7 @@ import os
 from PyQt4 import QtCore, QtGui, QtWebKit
 
 from markedup.parsing import Parser
+from markedup.curry import Curry
 
 base_html_pre = '<html><head><link rel="stylesheet" type="text/css" href="style.css" /></head><body>'
 base_html_post = '</body></html>'
@@ -47,14 +48,30 @@ class MarkedUp ( QtGui.QMainWindow ):
 		QtCore.QObject.connect( self.textArea, QtCore.SIGNAL( 'textChanged()' ), self.update_view )
 
 	def build_menu ( self ):
+		menubar = self.menuBar()
+		file_menu = menubar.addMenu( '&File' )
+
 		action = QtGui.QAction( QtGui.QIcon( 'icons/exit.png' ), 'Quit', self )
 		action.setShortcut( 'Ctrl+Q' )
 		action.setStatusTip( 'Quit application' )
 		self.connect( action, QtCore.SIGNAL( 'triggered()' ), QtCore.SLOT( 'close()' ) )
-
-		menubar = self.menuBar()
-		file_menu = menubar.addMenu( '&File' )
 		file_menu.addAction( action )
+
+		markup_menu = menubar.addMenu( '&Markup' )
+
+		self.markup_menu_items = {}
+
+		for lwm in self.parser.get_available_parsers():
+			self.markup_menu_items[lwm] = QtGui.QAction( self.parser.full_name( lwm ), self )
+			self.markup_menu_items[lwm].setCheckable( True )
+			self.connect( self.markup_menu_items[lwm], QtCore.SIGNAL( 'triggered()' ), Curry( self.set_format, lwm ) )
+			markup_menu.addAction( self.markup_menu_items[lwm] )
+
+	def set_format ( self, lwm ):
+		self.file_format = lwm
+		for key, item in self.markup_menu_items.items():
+			item.setChecked( key == lwm )
+		self.update_view( False )
 
 	def update_view ( self, is_signal=True ):
 		self.statusBar().showMessage( 'Rendering...' )
@@ -66,7 +83,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 		self.webview.setHtml(
 			'%s%s%s' % (
 				base_html_pre,
-				self.parser.parse( self.textArea.toPlainText(), self.file_format ),
+				self.parser.parse( unicode( self.textArea.toPlainText() ), self.file_format ),
 				base_html_post
 			),
 			self.base_url
@@ -75,20 +92,20 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 	def open_file ( self, path ):
 		self.statusBar().showMessage( 'Loading %s' % path )
-		if ".md" == path[-3:] or ".markdown" == path[-9:]:
-			self.file_format = 'markdown'
-		else:
-			self.statusBar().showMessage( 'Unknown File Format: %s' % path )
-			return False
 
 		self.saved = True
 		self.file = path
 		with open( self.file, 'r' ) as handle:
 			self.textArea.setText( handle.read() )
 
-		self.update_view( False )
 		self.statusBar().showMessage( 'Loaded %s' % path )
 		self.setWindowTitle( "MarkedUp - %s " % os.path.basename( path ) )
+
+		if ".md" == path[-3:] or ".markdown" == path[-9:]:
+			self.set_format( 'markdown' )
+		else:
+			self.statusBar().showMessage( 'Could not guess file format.' )
+
 
 if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)

@@ -35,6 +35,15 @@ class Parser ( object ):
 	def parse ( self, markup, parser ):
 		return self.parsers[parser]( markup )
 
+	def full_name ( self, parser ):
+		names = {
+			'markdown': 'Markdown',
+			'textile': 'Textile',
+			'bbcode': 'BBCode',
+			'creole': 'Creole'
+		}
+		return names[parser]
+
 if __name__ == "__main__":
 	x = Parser()
 	print "Parsers:", x.get_available_parsers()
