@@ -14,8 +14,11 @@ BASE_HTML_PRE = '<html><head><link rel="stylesheet" type="text/css" href="style.
 BASE_HTML_POST = '</body></html>'
 
 class MarkedUp ( QtGui.QMainWindow ):
-	def __init__(self):
-		QtGui.QMainWindow.__init__(self)
+
+	def __init__( self, parser ):
+		QtGui.QMainWindow.__init__( self )
+
+		self.parser = parser
 
 		# This is the file path to the currently edited file (None == New File)
 		self.file = None
@@ -30,6 +33,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 		self.setWindowTitle( "MarkedUp - [New File]" )
 		self.resize( 800, 600 )
 		self.setMinimumWidth( 500 )
+		self.setWindowIcon( QtGui.QIcon( '%s/resource/icon.64x64.png' % os.path.dirname( os.path.abspath( __file__ ) ) ) )
 
 		# Our central feature is a two-tab widget with editor and view source
 		self.tabs = QtGui.QTabWidget()
@@ -61,18 +65,6 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 		# To allow for custom styles/images, we get a base URL located in the same directory as the script
 		self.base_url = QtCore.QUrl( "file://%s/resource/" % os.path.dirname( os.path.abspath( __file__ ) ) )
-
-		# This Parser object will handle all the markup enumeration and parsing
-		self.parser = Parser()
-
-		# Make sure we have something to parse with
-		if len( self.parser.get_available_parsers() ) == 0:
-			QtGui.QMessageBox.critical(
-				self,
-				"No Parsers Available",
-				"MarkedUp could not find any parsers on your system.\n\nVisit http://github.com/jmhobbs/MarkedUp for help.\n\nShutting down."
-			);
-			self.close() # TODO: This seems to not work...
 
 		# Build the toolbar
 		self.build_toolbar()
@@ -295,6 +287,18 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 if __name__ == "__main__":
 	app = QtGui.QApplication( sys.argv )
-	markedup = MarkedUp()
-	markedup.show()
-	sys.exit( app.exec_() )
+
+	# This Parser object will handle all the markup enumeration and parsing
+	parser = Parser()
+
+	# Make sure we have something to parse with
+	if len( parser.get_available_parsers() ) == 0:
+		QtGui.QMessageBox.critical(
+			None,
+			"No Parsers Available",
+			"MarkedUp could not find any parsers on your system.\n\nVisit http://github.com/jmhobbs/MarkedUp for help.\n\nShutting down."
+		);
+	else:
+		markedup = MarkedUp( parser )
+		markedup.show()
+		sys.exit( app.exec_() )
