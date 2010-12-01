@@ -43,3 +43,10 @@ MarkedUp speaks several dialects of markup.  It will detect which ones your syst
 * Four Different Languages
 * Custom Stylesheets
 * Export Rendered HTML
+
+## Installing
+
+    # git clone git://github.com/jmhobbs/MarkedUp.git
+    # sudo python setup.py install
+
+It's that easy.

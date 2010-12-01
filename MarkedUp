@@ -10,7 +10,7 @@ from markedup.parsing import Parser
 from markedup.curry import Curry
 from markedup.file import MarkedUpFile
 
-BASE_HTML_PRE = '<html><head><link rel="stylesheet" type="text/css" href="style.css" /></head><body>'
+BASE_HTML_PRE = '<html><head><link rel="stylesheet" type="text/css" href="/usr/share/markedup/style.css" /></head><body>'
 BASE_HTML_POST = '</body></html>'
 
 class MarkedUp ( QtGui.QMainWindow ):
@@ -33,7 +33,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 		self.setWindowTitle( "MarkedUp - [New File]" )
 		self.resize( 800, 600 )
 		self.setMinimumWidth( 500 )
-		self.setWindowIcon( QtGui.QIcon( '%s/resource/icon.64x64.png' % os.path.dirname( os.path.abspath( __file__ ) ) ) )
+		self.setWindowIcon( QtGui.QIcon( '/usr/share/markedup/icon.64x64.png' ) )
 
 		# Our central feature is a two-tab widget with editor and view source
 		self.tabs = QtGui.QTabWidget()
@@ -74,7 +74,7 @@ class MarkedUp ( QtGui.QMainWindow ):
 
 		# On opening up the system, let's display a welcome message
 		# TODO:  If they pass in a CLI file, we should open that instead.
-		self.open_file( "%s/resource/welcome.md" % os.path.dirname( os.path.abspath( __file__ ) ) )
+		self.open_file( "/usr/share/markedup/welcome.md" )
 
 		# Any time the text changes, we need to re-parse and update our view
 		QtCore.QObject.connect( self.editArea, QtCore.SIGNAL( 'textChanged()' ), self.update_view )
