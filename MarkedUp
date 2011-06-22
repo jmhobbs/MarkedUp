@@ -4,7 +4,14 @@
 import sys
 import os
 
-from PyQt4 import QtCore, QtGui, QtWebKit
+try:
+	from PySide import QtCore, QtGui, QtWebKit
+except ImportError:
+	try:
+		from PyQt4 import QtCore, QtGui, QtWebKit
+	except ImportError:
+		print "PyQt4 or PySide Must Be Installed"
+		exit()
 
 from markedup.parsing import Parser
 from markedup.curry import Curry

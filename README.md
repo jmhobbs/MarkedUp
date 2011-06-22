@@ -10,7 +10,7 @@ I wrote this because I only touch Markdown once in a while, and I'm always forge
 
 ## Requirements
 
-* [PyQt4](http://www.riverbankcomputing.co.uk/news) With WebKit support
+* [PyQt4](http://www.riverbankcomputing.co.uk/news) or [PySide](http://www.pyside.org/) With WebKit support
 * Packages for the dialects you want (see below)
 * A modern Python installation (2.x series)
 
@@ -23,6 +23,8 @@ MarkedUp speaks several dialects of markup.  It will detect which ones your syst
 * [Markdown](http://daringfireball.net/projects/markdown/)
   * via [python-markdown2](http://code.google.com/p/python-markdown2/)
   * *easy_install markdown2*
+	* or via [python-markdown](http://www.freewisdom.org/projects/python-markdown/)
+	* *pip markdown*
 * [Textile](http://www.textism.com/tools/textile/)
   * via [PyTextile](http://github.com/jsamsa/python-textile)
   * *easy_install textile*

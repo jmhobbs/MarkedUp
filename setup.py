@@ -2,7 +2,7 @@
 from distutils.core import setup
 setup(
 	name='MarkedUp',
-	version='1.0.0',
+	version='1.1.0',
 	description='Markup File Editor',
 	author='John Hobbs',
 	author_email='john@velvetcache.org',
